@@ -3,6 +3,11 @@
 #include <ESP8266WiFiMulti.h>
 #include <ESP8266mDNS.h>
 #include <ESP8266WebServer.h>
+#include <PubSubClient.h>
+#include <ArduinoJson.h>
+extern "C" {
+  #include "user_interface.h"
+}
 
 
 // constants are here:
@@ -12,6 +17,7 @@
 char* ssid;
 char* pass;
 bool has_ssid_pass = false;
+bool connected_to_wifi = false;
 
 char* device_id;
 char* access_token;
@@ -68,7 +74,7 @@ void setupAP() {
   Serial.println(IP);
   Serial.println("Setup wifi done");
   access_token = device_id = getCharArrayFromString(WiFi.macAddress());
-  log("setup wifi");
+  Serial.println("setup wifi");
 }
 
 void setupServer(){
@@ -106,6 +112,33 @@ void setupServer(){
   Serial.println("Setup server done");
 }
 
+bool connectToWifi() {
+  Serial.printf("connecting to %s %s\n", ssid, pass);
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, pass);
+  int i = 0;
+  while (WiFi.status() != WL_CONNECTED) { // Wait for the Wi-Fi to connect
+    delay(500);
+    Serial.print(++i); Serial.print(' ');
+    if (i == 30){
+      Serial.println("Failed to connect");
+      return false;
+    }
+    log("retry");
+  }
+  WiFi.setAutoReconnect(true);
+  WiFi.persistent(true);
+  Serial.println('\n');
+  Serial.println("Connection established!");  
+  Serial.print("IP address:\t");
+  Serial.println(WiFi.localIP()); 
+  // device_id = getCharArrayFromString(WiFi.macAddress());
+  // access_token = device_id;
+  Serial.printf("MacAddress: %s\n", device_id);
+  Serial.println("connected to wifi");
+  return true;
+}
+
 void setupMetrics() {
   // TODO: do things about coffee maker board
   // here we set input and outputs of the board
@@ -127,6 +160,14 @@ void setup() {
 }
 
 void loop() {
+  server.handleClient();
+  client.loop();
+  
+  if (has_ssid_pass) {
+    connected_to_wifi = connectToWifi();
+    has_ssid_pass = false;
+  }
+
   // TODO: client must get updates from server
 
   // TODO: codes about coffee maker parameters and actions must be done
