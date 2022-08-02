@@ -27,7 +27,18 @@ const char* ACCESS_POINT_SSID = "coffeetest";
 IPAddress local_ip(192, 168, 1, 1);
 IPAddress gateway(192, 168, 1, 1);
 IPAddress subnet(255, 255, 255, 0);
+ESP8266WebServer server(8080);
 
+
+void setupMem(){
+  if (system_rtc_mem_read(RTCMEMORYSTART, &rtcMem, sizeof(rtcMem)) && rtcMem.magic == RTC_MAGIC){
+    ssid = rtcMem.ssid;
+    pass = rtcMem.pass;
+    has_ssid_pass = true;
+    //// TODO: delete password for security reasons
+    Serial.printf("Read from mem %s %s %d %d\n", ssid, pass, strlen(ssid), strlen(pass));
+  }
+}
 
 void setupAP() {
   Serial.printf("AP name %s\n", ACCESS_POINT_SSID);
@@ -45,17 +56,15 @@ void setupAP() {
   log("setup wifi");
 }
 
-
-void setupMem(){
-  if (system_rtc_mem_read(RTCMEMORYSTART, &rtcMem, sizeof(rtcMem)) && rtcMem.magic == RTC_MAGIC){
-    ssid = rtcMem.ssid;
-    pass = rtcMem.pass;
-    has_ssid_pass = true;
-    //// TODO delete password
-    Serial.printf("Read from mem %s %s %d %d\n", ssid, pass, strlen(ssid), strlen(pass));
-    log("Read from mem");
-    log(ssid);
-  }
+void setupServer(){
+  server.on("/ping", HTTP_GET, []() {
+    server.send(200, "text/plain", "PONG");
+  });
+  
+  // TODO: other things about nodeMCU being server
+  
+  server.begin();
+  Serial.println("Setup server done");
 }
 
 void setupMetrics() {
@@ -65,16 +74,16 @@ void setupMetrics() {
 
 
 void setup() {
-  // TODO: connect to wifi
-  
   ESP.eraseConfig();
+  
   Serial.begin(9600);
   delay(10);
   
   setupMetrics();
   setupMem();
+  
   setupAP();
-  // TODO: connect to server
+  setupServer();
   Serial.println("Setup done");
 }
 
