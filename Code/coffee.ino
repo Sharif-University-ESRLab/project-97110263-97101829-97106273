@@ -29,6 +29,14 @@ IPAddress gateway(192, 168, 1, 1);
 IPAddress subnet(255, 255, 255, 0);
 ESP8266WebServer server(8080);
 
+// this function is a simple util:
+//// TODO: move function to another file for clean code
+char* getCharArrayFromString(String str){
+  int str_len = str.length() + 1; 
+  char* chr = (char*) malloc(str_len);
+  str.toCharArray(chr, str_len);
+  return chr;
+}
 
 void setupMem(){
   if (system_rtc_mem_read(RTCMEMORYSTART, &rtcMem, sizeof(rtcMem)) && rtcMem.magic == RTC_MAGIC){
@@ -38,6 +46,13 @@ void setupMem(){
     //// TODO: delete password for security reasons
     Serial.printf("Read from mem %s %s %d %d\n", ssid, pass, strlen(ssid), strlen(pass));
   }
+}
+
+void storeMem(){
+    rtcMem.magic = RTC_MAGIC;
+    rtcMem.ssid = ssid;
+    rtcMem.pass = pass;
+    system_rtc_mem_write(RTCMEMORYSTART, &rtcMem, sizeof(rtcMem));
 }
 
 void setupAP() {
@@ -57,12 +72,36 @@ void setupAP() {
 }
 
 void setupServer(){
-  server.on("/ping", HTTP_GET, []() {
-    server.send(200, "text/plain", "PONG");
+//   server.on("/ping", HTTP_GET, []() {
+//     server.send(200, "text/plain", "PONG");
+//   });
+  
+  server.on("/connect", HTTP_POST, []() {
+    if (server.hasArg("ssid") && server.hasArg("pass") && server.arg("ssid") != NULL && server.arg("pass") != NULL){
+      ssid = getCharArrayFromString(server.arg("ssid"));
+      pass = getCharArrayFromString(server.arg("pass"));
+      Serial.println(ssid);
+      char* data = (char*) malloc(1024);
+      data[0] = '\0';
+      strcat(data, "{\"device_id\":\"");
+      strcat(data, device_id);
+      strcat(data, "\",\"access_token\":\"");
+      strcat(data, access_token);
+      strcat(data, "\"}");
+      Serial.println(data);
+      storeMem();
+      server.send(200, "text/plain", data);
+      has_ssid_pass = true;
+      free(data);
+    } else {
+      server.send(400, "text/plain", "Bad args");
+    }
   });
-  
-  // TODO: other things about nodeMCU being server
-  
+
+  server.onNotFound([]() {
+    server.send(404, "text/plain", "404: Not found");
+  });
+
   server.begin();
   Serial.println("Setup server done");
 }
