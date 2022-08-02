@@ -18,6 +18,7 @@ char* ssid;
 char* pass;
 bool has_ssid_pass = false;
 bool connected_to_wifi = false;
+bool connected_to_mqtt = false;
 
 char* device_id;
 char* access_token;
@@ -34,6 +35,15 @@ IPAddress local_ip(192, 168, 1, 1);
 IPAddress gateway(192, 168, 1, 1);
 IPAddress subnet(255, 255, 255, 0);
 ESP8266WebServer server(8080);
+
+WiFiClient espClient;
+PubSubClient client(espClient);
+char* SUB_TOPIC = "cmd/";
+char* sub_topic = (char*) malloc(128);
+char* PUB_TOPIC = "signal/";
+char* pub_topic = (char*) malloc(128);
+char* MQTT_HOST = "94.101.176.204";
+int MQTT_PORT = 1883;
 
 // this function is a simple util:
 //// TODO: move function to another file for clean code
@@ -139,11 +149,62 @@ bool connectToWifi() {
   return true;
 }
 
+void callback(char *topic, byte *payload, unsigned int length) {
+  Serial.printf("Call back %s %s \n", topic, payload);
+  DynamicJsonDocument data(length + 10);
+  DeserializationError err = deserializeJson(data, payload);
+  if (err) {
+    Serial.print(("deserializeJson() failed: "));
+    Serial.println(err.c_str());
+
+    Serial.print("Message arrived in topic: ");
+    Serial.println(topic);
+    Serial.print("Message:");
+    for (int i = 0; i < length; i++) {
+      Serial.print((char) payload[i]);
+    }
+    Serial.println();
+    Serial.println("-----------------------");
+  }
+  log("callback");
+
+  //// TODO: works about coffee maker data must be written here
+  //// also here we must rewrite data to pins and update them using rewrite function()
+  return;
+}
+
+bool connectToMqtt() {
+  Serial.printf("Connecting to mqtt %s:%d\n", MQTT_HOST, MQTT_PORT);
+  client.setServer(MQTT_HOST, MQTT_PORT) ;
+  client.setCallback(callback);
+  if (!client.connect(device_id, device_id, access_token)) {
+    Serial.println("Failed to connect");
+    delay(1000);
+    return false;
+  }
+  sub_topic[0] = '\0';
+  strcat(sub_topic, SUB_TOPIC);
+  strcat(sub_topic, device_id);
+  pub_topic[0] = '\0';
+  strcat(pub_topic, PUB_TOPIC);
+  strcat(pub_topic, device_id);
+  Serial.printf("Subscribing on %s\n", sub_topic);
+  Serial.printf("Publishing on %s\n", pub_topic);
+  client.subscribe(sub_topic);
+  Serial.println("Connected to mqtt");
+  log("connected to mqtt");
+  return true;
+}
+
 void setupMetrics() {
-  // TODO: do things about coffee maker board
+  //// TODO: do things about coffee maker board
   // here we set input and outputs of the board
 }
 
+void rewrite(){
+  Serial.println("Rewrite keys");
+  //// TOOD: here we write data (that we get from MQTT server) to digital output pins
+}
 
 void setup() {
   ESP.eraseConfig();
@@ -163,12 +224,20 @@ void loop() {
   server.handleClient();
   client.loop();
   
+  // connect nodeMCU to WiFi
   if (has_ssid_pass) {
     connected_to_wifi = connectToWifi();
     has_ssid_pass = false;
   }
 
-  // TODO: client must get updates from server
+  if (connected_to_wifi && !connected_to_mqtt) {
+    connected_to_mqtt = connectToMqtt();
+  }
+  if (!client.connected() && connected_to_mqtt ) {
+    Serial.println("mqtt disconnected");
+    connected_to_mqtt = false;
+  }
 
-  // TODO: codes about coffee maker parameters and actions must be done
+  //// TODO: codes about coffee maker parameters and actions must be done
+  //// TODO: send data (metrics) about coffe maker to server
 }
