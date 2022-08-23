@@ -5,14 +5,10 @@
 #include <ESP8266WebServer.h>
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
-extern "C" {
-  #include "user_interface.h"
-}
+// extern "C" {
+//   #include "user_interface.h"
+// }
 
-
-// constants are here:
-#define RTCMEMORYSTART 65
-#define RTC_MAGIC 12345678
 
 char* ssid;
 char* pass;
@@ -22,13 +18,6 @@ bool connected_to_mqtt = false;
 
 char* device_id;
 char* access_token;
-
-typedef struct {
-  uint32 magic ;
-  char* ssid;
-  char* pass;
-} rtcStore;
-rtcStore rtcMem;
 
 const char* ACCESS_POINT_SSID = "coffeetest";
 IPAddress local_ip(192, 168, 1, 1);
@@ -52,23 +41,6 @@ char* getCharArrayFromString(String str){
   char* chr = (char*) malloc(str_len);
   str.toCharArray(chr, str_len);
   return chr;
-}
-
-void setupMem(){
-  if (system_rtc_mem_read(RTCMEMORYSTART, &rtcMem, sizeof(rtcMem)) && rtcMem.magic == RTC_MAGIC){
-    ssid = rtcMem.ssid;
-    pass = rtcMem.pass;
-    has_ssid_pass = true;
-    //// TODO: delete password for security reasons
-    Serial.printf("Read from mem %s %s %d %d\n", ssid, pass, strlen(ssid), strlen(pass));
-  }
-}
-
-void storeMem(){
-    rtcMem.magic = RTC_MAGIC;
-    rtcMem.ssid = ssid;
-    rtcMem.pass = pass;
-    system_rtc_mem_write(RTCMEMORYSTART, &rtcMem, sizeof(rtcMem));
 }
 
 void setupAP() {
@@ -105,7 +77,6 @@ void setupServer(){
       strcat(data, access_token);
       strcat(data, "\"}");
       Serial.println(data);
-      storeMem();
       server.send(200, "text/plain", data);
       has_ssid_pass = true;
       free(data);
@@ -213,7 +184,6 @@ void setup() {
   delay(10);
   
   setupMetrics();
-  setupMem();
   
   setupAP();
   setupServer();
