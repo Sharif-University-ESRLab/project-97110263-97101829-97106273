@@ -14,8 +14,8 @@ int startPin = 10;              // variable to read the pin for starting coffee 
 int coffeeLevel = 3;            //
 int waterLevel = 2;             //
 int coffeeOpenTime = 2000;      // time (ms) that coffee tank is open
-int waterOpenTime = 5000;       // time (ms) that water tank is open
-int coffeeTurnOnTime = 100000;  // time (ms) that coffee maker must be on and boiling
+int waterOpenTime = 18000;       // time (ms) that water tank is open
+int coffeeTurnOnTime = 20000;  // time (ms) that coffee maker must be on and boiling
 
 
 void setCoffeePower(bool isOn) {
@@ -39,18 +39,18 @@ void setCoffeeTank(bool isOpen) {
 void setWaterTank(bool isOpen) {
     // 1 for open and 0 for close
     if (isOpen) {
-      digitalWrite(waterPin, HIGH);
-    } else {
       digitalWrite(waterPin, LOW);
+    } else {
+      digitalWrite(waterPin, HIGH);
     }
 }
 
 void setArmature(bool isOn) {
     // 1 for on and 0 for off
     if (isOn) {
-      digitalWrite(armaturePin, HIGH);
-    } else {
       digitalWrite(armaturePin, LOW);
+    } else {
+      digitalWrite(armaturePin, HIGH);
     }
 }
 
@@ -87,7 +87,8 @@ void setup() {
 }
 
 void loop() {
-    int shouldStart = digitalRead(startPin);   // read the input pin
+//    int shouldStart = digitalRead(startPin);   // read the input pin
+    int shouldStart = 1;
     
     if (shouldStart) {
       drainCoffee();
