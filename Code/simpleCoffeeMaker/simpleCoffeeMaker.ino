@@ -11,9 +11,9 @@ int servoDataPin = 9;           // variable to set the pin of data/degree for se
 int coffeePowerPin = 8;         // variable to set the pin of HIGH and LOW voltage for turn on and off coffee power
 int startPin = 10;              // variable to read the pin for starting coffee process
 
-int coffeeLevel = 3;            //
-int waterLevel = 2;             //
-int coffeeOpenTime = 2000;      // time (ms) that coffee tank is open
+int coffeeLevel = 1;            // 1 to 3
+int waterLevel = 1;             // 1 to 2
+int coffeeOpenTime = 5000;      // time (ms) that coffee tank is open
 int waterOpenTime = 18000;       // time (ms) that water tank is open
 int coffeeTurnOnTime = 20000;  // time (ms) that coffee maker must be on and boiling
 
@@ -75,11 +75,12 @@ void drainWater() {
 }
 
 void setup() {
+    Serial.begin(9600);
     myservo.attach(servoDataPin);  // attaches the servo on pin 9 to the servo object
     pinMode(armaturePin, OUTPUT);
     pinMode(waterPin, OUTPUT);
     pinMode(coffeePowerPin, OUTPUT);
-    pinMode(startPin, INPUT);
+    pinMode(startPin, INPUT_PULLUP); // INPUT_PULLUP is HIGH in default so it is active LOW
     setCoffeeTank(false);
     setArmature(false);
     setWaterTank(false);
@@ -87,10 +88,14 @@ void setup() {
 }
 
 void loop() {
-//    int shouldStart = digitalRead(startPin);   // read the input pin
-    int shouldStart = 1;
+    int shouldStart = digitalRead(startPin);   // read the input pin
     
-    if (shouldStart) {
+    coffeeOpenTime = 2000 * coffeeLevel;
+    waterOpenTime = 18000 * waterLevel;
+
+    Serial.println(shouldStart);
+    
+    if (shouldStart == LOW) {
       drainCoffee();
       drainWater();
       setCoffeePower(true);
