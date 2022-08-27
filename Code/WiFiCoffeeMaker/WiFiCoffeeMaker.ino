@@ -70,10 +70,10 @@ void setCoffeePower(bool isOn) {
     // 1 for on and 0 for off
     if (isOn) {
       coffeePowerIsOn  = true;
-      digitalWrite(coffeePowerPin, HIGH);
+      digitalWrite(coffeePowerPin, LOW);
     } else {
       coffeePowerIsOn  = false;
-      digitalWrite(coffeePowerPin, LOW);
+      digitalWrite(coffeePowerPin, HIGH);
     }
 }
 
@@ -212,7 +212,7 @@ void callback(char *topic, byte *payload, unsigned int length) {
   if (data["signals"].containsKey("power")){
      shouldStart = data["signals"]["power"]["value"];
      coffeeLevel = data["signals"]["coffee"]["value"];
-      waterLevel = data["signals"]["water"]["value"];
+     waterLevel = data["signals"]["water"]["value"];
   }
   return;
 }
@@ -301,8 +301,12 @@ void setupServer(){
       serializeJson(doc, Buf);
       request->send(200, "text/plain", Buf);
   });
+  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
+    request->send(200, "text/plain", "Hi! I am ESP8266.");
+  });
   server.onNotFound([](AsyncWebServerRequest *request) {request->send(404, "text/plain", "404: Not found");});
 
+  AsyncElegantOTA.begin(&server);
   
   server.begin();
   Serial.println("Setup server done");
@@ -339,23 +343,24 @@ void loop() {
     coffeeOpenTime = coffeeInitTime + (coffeeLevel - 1) * coffeeLevelUpUnit;
     waterOpenTime = waterInitTime + (waterLevel - 1) * waterLevelUpUnit;
 
-    Serial.println("shouldStart:");
-    Serial.println(shouldStart);
-    Serial.println("coffeeOpenTime:");
-    Serial.println(coffeeOpenTime);
-    Serial.println("waterOpenTime:");
-    Serial.println(waterOpenTime);
+//    Serial.println("shouldStart:");
+//    Serial.println(shouldStart);
+//    Serial.println("coffeeOpenTime:");
+//    Serial.println(coffeeOpenTime);
+//    Serial.println("waterOpenTime:");
+//    Serial.println(waterOpenTime);
 
     if (shouldStart) {
-      if (coffeePowerIsOn   == false)
+      if (coffeePowerIsOn == false)
       {
         drainCoffee();
         drainWater();
         setCoffeePower(true);
         startTime = millis();  
-      } else if(millis() - startTime >= coffeeTurnOnTime)
+      }else if(millis() - startTime >= coffeeTurnOnTime)
       {
         setCoffeePower(false);
+        shouldStart = false;
       }  
     }
     
