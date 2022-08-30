@@ -41,7 +41,7 @@ Servo myservo;  // create servo object to control a servo
 // TODO: change pins for nodeMCU: consider that "servoDataPin" is PWM pulse
 // optional TODO: we don't need startPin: we read from the application
 
-int closeDegree = 140;          // variable to store the servo position for closing
+int closeDegree = 130;          // variable to store the servo position for closing
 int openDegree = 60;            // variable to store the servo position for opening
 int armaturePin = D0;           // variable to set the pin of HIGH and LOW voltage for turn on and off armature
 int waterPin = D1;              // variable to set the pin of HIGH and LOW voltage for open and close water tank
@@ -56,7 +56,7 @@ int coffeeLevelUpUnit = 3000;   // for each level up
 int waterLevelUpUnit = 10000;   // for each level up
 int coffeeInitTime = 5000;      // first level time for coffee
 int waterInitTime = 18000;      // first level time for water
-int coffeeTurnOnTime = 120000;   // time (ms) that coffee maker must be on and boiling
+int coffeeTurnOnTime = 40000;   // time (ms) that coffee maker must be on and boiling
 
 
 long startTime = 0;
@@ -66,76 +66,76 @@ long lastMetricSent = 0;
 
 int stage = 0;
 /*
-   stage 0 -> off
-   stage 1 -> should open coffee
-   stage 2 -> coffee is being poured
-
-   stage 3 -> water should open
-   stage 4 -> water is being poured
-
-   stage 5 -> brewing must start
-   stage 6 -> brewing is being done
-*/
+ * stage 0 -> off
+ * stage 1 -> should open coffee
+ * stage 2 -> coffee is being poured
+ * 
+ * stage 3 -> water should open
+ * stage 4 -> water is being poured
+ * 
+ * stage 5 -> brewing must start
+ * stage 6 -> brewing is being done
+ */
 
 void setCoffeePower(bool isOn) {
-  // 1 for on and 0 for off
-  if (isOn) {
-    digitalWrite(coffeePowerPin, LOW);
-  } else {
-    digitalWrite(coffeePowerPin, HIGH);
-  }
+    // 1 for on and 0 for off
+    if (isOn) {
+      digitalWrite(coffeePowerPin, LOW);
+    } else {
+      digitalWrite(coffeePowerPin, HIGH);
+    }
 }
 
 void setCoffeeTank(bool isOpen) {
-  // 1 for open and 0 for close
-  if (isOpen) {
-    myservo.write(openDegree);
-  } else {
-    myservo.write(closeDegree);
-  }
+    // 1 for open and 0 for close
+    if (isOpen) {
+      myservo.write(openDegree);
+    } else {
+      myservo.write(closeDegree);
+    }
 }
 
 void setWaterTank(bool isOpen) {
-  // 1 for open and 0 for close
-  if (isOpen) {
-    digitalWrite(waterPin, LOW);
-  } else {
-    digitalWrite(waterPin, HIGH);
-  }
+    // 1 for open and 0 for close
+    if (isOpen) {
+      digitalWrite(waterPin, LOW);
+    } else {
+      digitalWrite(waterPin, HIGH);
+    }
 }
 
 void setArmature(bool isOn) {
-  // 1 for on and 0 for off
-  if (isOn) {
-    digitalWrite(armaturePin, LOW);
-  } else {
-    digitalWrite(armaturePin, HIGH);
-  }
+    // 1 for on and 0 for off
+    if (isOn) {
+      digitalWrite(armaturePin, LOW);
+    } else {
+      digitalWrite(armaturePin, HIGH);
+    }
 }
 
 void drainCoffee() {
-  ///////////////////##########//////////////////////
-  int coffeeOpenTime = coffeeInitTime + (coffeeLevel - 1) * coffeeLevelUpUnit;
-
-  if (stage == 1) {
-    setCoffeeTank(true);      // Open the coffee tank
-    delay(100);               // Small wait
-    setArmature(true);        // Turn on armature
-    drainCoffeeStartTime = millis();
-    stage = 2;
-  } else if (stage == 2) {
-    if (millis() - drainCoffeeStartTime >= coffeeOpenTime) {
-      stage = 3;
-      setArmature(false);       // Turn off armature
+    ///////////////////##########//////////////////////
+    int coffeeOpenTime = coffeeInitTime + (coffeeLevel - 1) * coffeeLevelUpUnit;
+    
+    if (stage == 1) {
+      setCoffeeTank(true);      // Open the coffee tank
       delay(100);               // Small wait
-      setCoffeeTank(false);     // Close the coffee tank
-    } else {
-      delay(100);
+      setArmature(true);        // Turn on armature
+      drainCoffeeStartTime = millis();  
+      stage = 2;
+    } else if (stage == 2) {
+      if (millis() - drainCoffeeStartTime >= coffeeOpenTime) {
+        stage = 3;
+        setArmature(false);       // Turn off armature
+        delay(100);               // Small wait
+        setCoffeeTank(false);     // Close the coffee tank
+      } else {
+        delay(100);
+      }
     }
-  }
+    
 
-
-  ///////////////////##########//////////////////////
+    ///////////////////##########//////////////////////
 }
 
 void drainWater() {
@@ -154,23 +154,26 @@ void drainWater() {
 
 
 void setup() {
-  ESP.eraseConfig();
-  Serial.begin(9600);
-  delay(10);
-  Serial.println("V1.0");
-  setupAP();
-  setupServer();
-  myservo.attach(servoDataPin, 500, 2400);  // attaches the servo on pin 9 to the servo object
-  pinMode(armaturePin, OUTPUT);
-  pinMode(waterPin, OUTPUT);
-  pinMode(coffeePowerPin, OUTPUT);
-  pinMode(startPin, INPUT_PULLUP); // INPUT_PULLUP is HIGH in default so it is active LOW
-  setCoffeeTank(false);
-  setArmature(false);
-  setWaterTank(false);
-  setCoffeePower(false);
+    ESP.eraseConfig();
+    Serial.begin(19200);
+    while (! Serial);
+      Serial.print("Hello World");
+    delay(10);
+    Serial.println("V1.0");
+    setupAP();
+    setupServer();
+    
+    myservo.attach(servoDataPin, 500, 2400);  // attaches the servo on pin 9 to the servo object
+    pinMode(armaturePin, OUTPUT);
+    pinMode(waterPin, OUTPUT);
+    pinMode(coffeePowerPin, OUTPUT);
+    pinMode(startPin, INPUT_PULLUP); // INPUT_PULLUP is HIGH in default so it is active LOW
+    setCoffeeTank(false);
+    setArmature(false);
+    setWaterTank(false);
+    setCoffeePower(false);
 
-  Serial.println("Setup done");
+    Serial.println("Setup done");
 }
 
 
@@ -186,7 +189,6 @@ void setupAP() {
   Serial.println("Setup wifi done");
   Serial.println(getCharArrayFromString(WiFi.macAddress()));
   Serial.println();
-  //  access_token = device_id = "A4:CF:12:F0:00:B3";
   access_token = device_id = getCharArrayFromString(WiFi.macAddress());
 }
 
@@ -198,8 +200,8 @@ bool connectToWifi() {
   int i = 0;
   while (WiFi.status() != WL_CONNECTED) { // Wait for the Wi-Fi to connect
     delay(500);
-    //    Serial.print(++i); Serial.print(' ');
-    if (i == 20) {
+    Serial.print(++i); Serial.print(' ');
+    if (i == 20){
       Serial.println("Failed to connect");
       WiFi.disconnect();
       has_ssid_pass = has_ssid_pass_really;
@@ -210,11 +212,10 @@ bool connectToWifi() {
   WiFi.setAutoReconnect(true);
   WiFi.persistent(true);
   Serial.println('\n');
-  Serial.println("Connection established!");
+  Serial.println("Connection established!");  
   Serial.print("IP address:\t");
-  Serial.println(WiFi.localIP());
+  Serial.println(WiFi.localIP()); 
   device_id = getCharArrayFromString(WiFi.macAddress());
-  //  device_id = "A4:CF:12:F0:00:B3";
   access_token = device_id;
   Serial.printf("MacAddress: %s\n", device_id);
   return true;
@@ -226,43 +227,43 @@ void callback(char *topic, byte *payload, unsigned int length) {
   DynamicJsonDocument data(length + 10);
   DeserializationError err = deserializeJson(data, payload);
   if (err) {
-    //    Serial.print(("deserializeJson() failed: "));
-    //    Serial.println(err.c_str());
+    Serial.print(("deserializeJson() failed: "));
+    Serial.println(err.c_str());
 
-    //    Serial.print("Message arrived in topic: ");
-    //    Serial.println(topic);
-    //    Serial.print("Message:");
+    Serial.print("Message arrived in topic: ");
+    Serial.println(topic);
+    Serial.print("Message:");
     for (int i = 0; i < length; i++) {
-      //      Serial.print((char) payload[i]);
+      Serial.print((char) payload[i]);
     }
-    //    Serial.println();
-    //    Serial.println("-----------------------");
+    Serial.println();
+    Serial.println("-----------------------");
   }
-  if (data["signals"].containsKey("power")) {
-    int power = data["signals"]["power"]["value"];
-    if (stage == 0 && power == 1) {
-      stage = 1;
-    } else if (power == 0) {
-      stage = 0;
-    }
-    //      Serial.print("power level: ");
-    //      Serial.println(power);
-  } else if (data["signals"].containsKey("coffee")) {
-    coffeeLevel = data["signals"]["coffee"]["value"];
-    //      Serial.print("coffee level: ");
-    //      Serial.println(coffeeLevel);
-
-  } else if (data["signals"].containsKey("water")) {
-    waterLevel = data["signals"]["water"]["value"];
-    //      Serial.print("water level: ");
-    //      Serial.println(waterLevel);
+  if (data["signals"].containsKey("power")){
+     int power = data["signals"]["power"]["value"];
+     if (stage == 0 && power == 1) {
+        stage = 1;
+      } else if (power == 0) {
+        stage = 0;
+      }
+      Serial.print("power level: ");
+      Serial.println(power);
+  } else if (data["signals"].containsKey("coffee")){
+      coffeeLevel = data["signals"]["coffee"]["value"];
+      Serial.print("coffee level: ");
+      Serial.println(coffeeLevel);
+     
+  } else if (data["signals"].containsKey("water")){
+      waterLevel = data["signals"]["water"]["value"];
+      Serial.print("water level: ");
+      Serial.println(waterLevel);
   }
-
+  
   return;
 }
 
 bool connectToMqtt() {
-  //  Serial.printf("Connecting to mqtt %s:%d\n", MQTT_HOST, MQTT_PORT);
+//  Serial.printf("Connecting to mqtt %s:%d\n", MQTT_HOST, MQTT_PORT);
   client.setServer(MQTT_HOST, MQTT_PORT) ;
   client.setCallback(callback);
   if (!client.connect(device_id, device_id, access_token)) {
@@ -277,7 +278,7 @@ bool connectToMqtt() {
   strcat(pub_topic, PUB_TOPIC);
   strcat(pub_topic, device_id);
   client.subscribe(sub_topic);
-  //  Serial.println("Connected to mqtt");
+//  Serial.println("Connected to mqtt");
   return true;
 }
 
@@ -297,30 +298,29 @@ void sendMetrics() {
   char Buf[2048];
   serializeJson(doc, Buf);
   client.publish(PUB_TOPIC, Buf);
-  Serial.println("Sent metrics: coffee: ");
-  delay(100);
-  //  Serial.print(coffeeLevel);
-  //  Serial.print(",  water: ");
-  //  Serial.print(waterLevel);
-  //  Serial.print(" and power: ");
-  //  Serial.println(stage > 0);
+  Serial.print("Sent metrics: coffee: ");
+  Serial.print(coffeeLevel);
+  Serial.print(",  water: ");
+  Serial.print(waterLevel);
+  Serial.print(" and power: ");
+  Serial.println(stage > 0);
 }
 
-char* getCharArrayFromString(String str) {
-  int str_len = str.length() + 1;
+char* getCharArrayFromString(String str){
+  int str_len = str.length() + 1; 
   char* chr = (char*) malloc(str_len);
   str.toCharArray(chr, str_len);
   return chr;
 }
 
 
-void setupServer() {
-  server.on("/ping", HTTP_GET, [](AsyncWebServerRequest * request) {
+void setupServer(){
+  server.on("/ping", HTTP_GET, [](AsyncWebServerRequest *request) {
     request->send(200, "text/plain", "PONG");
   });
-
-  server.on("/connect", HTTP_POST, [](AsyncWebServerRequest * request) {
-    if (request->hasArg("ssid") && request->hasArg("pass") && request->arg("ssid") != NULL && request->arg("pass") != NULL) {
+  
+  server.on("/connect", HTTP_POST, [](AsyncWebServerRequest *request) {
+    if (request->hasArg("ssid") && request->hasArg("pass") && request->arg("ssid") != NULL && request->arg("pass") != NULL){
       ssid = getCharArrayFromString(request->arg("ssid"));
       pass = getCharArrayFromString(request->arg("pass"));
       char* data = (char*) malloc(1024);
@@ -335,29 +335,27 @@ void setupServer() {
       connected_to_wifi = false;
       has_ssid_pass_really = true;
       free(data);
-    } else {
+    }else{
       request->send(400, "text/plain", "Bad args");
     }
   });
-  server.on("/status", HTTP_GET, [](AsyncWebServerRequest * request) {
-    DynamicJsonDocument doc(2048);
-    doc["last_ssid"] = ssid;
-    doc["connected_to_wifi"] = connected_to_wifi;
-    doc["connected_to_mqtt"] = connected_to_mqtt;
-    doc["wifi_status"] = WiFi.status();
-    char Buf[2048];
-    serializeJson(doc, Buf);
-    request->send(200, "text/plain", Buf);
+  server.on("/status", HTTP_GET, [](AsyncWebServerRequest *request) {
+      DynamicJsonDocument doc(2048);
+      doc["last_ssid"] = ssid;
+      doc["connected_to_wifi"] = connected_to_wifi;
+      doc["connected_to_mqtt"] = connected_to_mqtt;
+      doc["wifi_status"] = WiFi.status();
+      char Buf[2048];
+      serializeJson(doc, Buf);
+      request->send(200, "text/plain", Buf);
   });
-  server.on("/", HTTP_GET, [](AsyncWebServerRequest * request) {
+  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
     request->send(200, "text/plain", "Hi! I am ESP8266.");
   });
-  server.onNotFound([](AsyncWebServerRequest * request) {
-    request->send(404, "text/plain", "404: Not found");
-  });
+  server.onNotFound([](AsyncWebServerRequest *request) {request->send(404, "text/plain", "404: Not found");});
 
   AsyncElegantOTA.begin(&server);
-
+  
   server.begin();
   Serial.println("Setup server done");
 }
@@ -366,60 +364,60 @@ void setupServer() {
 
 
 void loop() {
-  client.loop();
+    client.loop();
 
-  if (has_ssid_pass) {
-    connected_to_wifi = connectToWifi();
-    has_ssid_pass = false;
-  }
-  if (connected_to_wifi && !connected_to_mqtt) {
-    Serial.println("Connecting to mqtt");
-    connected_to_mqtt = connectToMqtt();
-  }
-  if (!client.connected() && connected_to_mqtt ) {
-    Serial.println("mqtt disconnected");
-    connected_to_mqtt = false;
-  }
-
-  if (millis() - lastMetricSent > 3000) {
-
-    if (connected_to_mqtt)
-      sendMetrics();
-    lastMetricSent = millis();
-  }
-
-  // state machine
-  if (stage > 0) {
-
-    switch (stage) {
-      case 1:
-      case 2: // draining cofee
-        drainCoffee();
-        break;
-
-      case 3:
-      case 4:  // draining water
-        drainWater();
-        break;
-
-      case 5: // start brewing
-        setCoffeePower(true);
-        startTime = millis();
-        stage = 6;
-        break;
-
-      case 6: // brewing
-        if (millis() - startTime >= coffeeTurnOnTime) {
-          setCoffeePower(false);
-          stage = 0;
-        }
-        break;
+    if (has_ssid_pass && !connected_to_wifi) {
+      connected_to_wifi = connectToWifi();
+//      has_ssid_pass = false;
     }
-  } else {
-    setCoffeeTank(false);
-    setArmature(false);
-    setWaterTank(false);
-    setCoffeePower(false);
-  }
+    if (connected_to_wifi && !connected_to_mqtt) {
+      Serial.println("Connecting to mqtt");
+      connected_to_mqtt = connectToMqtt();
+    }
+    if (!client.connected() && connected_to_mqtt ) {
+      Serial.println("mqtt disconnected");
+      connected_to_mqtt = false;
+    }
+
+    if (millis() - lastMetricSent > 3000) {
+    
+      if (connected_to_mqtt)
+        sendMetrics();
+      lastMetricSent = millis();
+    }
+    
+    // state machine
+    if (stage > 0) {
+
+      switch (stage) {
+        case 1: 
+        case 2: // draining cofee
+            drainCoffee();
+          break;
+
+         case 3:
+         case 4:  // draining water
+            drainWater();
+          break;
+
+         case 5: // start brewing
+            setCoffeePower(true);
+            startTime = millis();
+            stage = 6;
+            break;
+            
+         case 6: // brewing
+          if(millis() - startTime >= coffeeTurnOnTime) {
+              setCoffeePower(false);
+              stage = 0;
+            }  
+          break;
+      }
+    } else {
+      setCoffeeTank(false);
+      setArmature(false);
+      setWaterTank(false);
+      setCoffeePower(false);
+    }
 
 }
