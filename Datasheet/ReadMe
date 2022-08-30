@@ -1,1 +1,4 @@
 This folder should contain the datasheet of your hardware device.
+
+
+all devices used in this project have their datasheet listed in this directory except for the armature, which was described to us as "blow dryer engine" and has no name or part number what so ever! all we know is that it uses 12v power but works with 5v too. 
